@@ -37,8 +37,7 @@ class Uri
     /**
      * @var UserInfo
      */
-    protected $userinfo;
-
+    protected $userInfo;
 
     /**
      * Uri constructor.
@@ -46,33 +45,25 @@ class Uri
      * @param string $host
      * @param int $port
      * @param string $path
-     * @param Query|null $query
+     * @param Query $query
      * @param string $fragment
-     * @param UserInfo|null $userinfo
+     * @param UserInfo $userInfo
      */
-    public function __construct(
-        Scheme $scheme = null,
-        $host = "localhost",
-        $port = 80,
-        $path = "/",
-        Query $query = null,
-        $fragment = "",
-        UserInfo $userinfo = null
-    )
+    public function __construct(Scheme $scheme, string $host, int $port, string $path, Query $query, string $fragment, UserInfo $userInfo)
     {
-        $this->scheme = is_null($scheme) ? new Scheme() : $scheme;
+        $this->scheme = $scheme;
         $this->host = $host;
         $this->port = $port;
-        $this->path = empty($path) ? "/" : $path;
+        $this->path = $path;
         $this->query = $query;
         $this->fragment = $fragment;
-        $this->userinfo = $userinfo;
+        $this->userInfo = $userInfo;
     }
 
     /**
      * @return Scheme
      */
-    public function Scheme()
+    public function scheme(): Scheme
     {
         return $this->scheme;
     }
@@ -80,7 +71,7 @@ class Uri
     /**
      * @return string
      */
-    public function Host()
+    public function host(): string
     {
         return $this->host;
     }
@@ -88,7 +79,7 @@ class Uri
     /**
      * @return int
      */
-    public function Port()
+    public function port(): int
     {
         return $this->port;
     }
@@ -96,7 +87,7 @@ class Uri
     /**
      * @return string
      */
-    public function Path()
+    public function path(): string
     {
         return $this->path;
     }
@@ -104,7 +95,7 @@ class Uri
     /**
      * @return Query
      */
-    public function Query()
+    public function query(): Query
     {
         return $this->query;
     }
@@ -112,7 +103,7 @@ class Uri
     /**
      * @return string
      */
-    public function Fragment()
+    public function fragment(): string
     {
         return $this->fragment;
     }
@@ -120,62 +111,34 @@ class Uri
     /**
      * @return UserInfo
      */
-    public function UserInfo()
+    public function userInfo(): UserInfo
     {
-        return $this->userinfo;
+        return $this->userInfo;
     }
 
     /**
      * @return string
      */
-    public function Authority()
+    public function authority(): string
     {
-        $userinfo = $port = "";
-        if (!empty($this->userinfo)) {
-            $info = $this->userinfo->Info();
-            if (!empty($info)) {
-                $userinfo = sprintf("%s@", $this->userinfo->Info());
-            }
-        }
-        if (!empty($this->port) && $this->port !== 80 && $this->port !== 443) {
-            $port = sprintf(":%s", $this->port);
-        }
-        return sprintf("%s%s%s", $userinfo, $this->host, $port);
+        return sprintf("%s%s%s",
+            $this->userInfo->info() ? sprintf("%s@", $this->userInfo->info()) : "",
+            $this->host,
+            ($this->port !== 80 && $this->port !== 443) ? sprintf(":%s", $this->port) : ""
+        );
     }
 
     /**
      * @return string
      */
-    public function Target()
+    public function target(): string
     {
-        $scheme = $query = $path = $fragment = "";
-        if (!empty($this->scheme)) {
-            $info = $this->scheme->String();
-            if (!empty($info)) {
-                $scheme = sprintf("%s://", $this->scheme->String());
-            }
-        }
-        if (!empty($this->query)) {
-            $info = $this->query->QueryString();
-            if (!empty($info)) {
-                $query = sprintf("?%s", $info);
-            }
-        }
-        if (!empty($this->path)) {
-            $path = sprintf("/%s", ltrim($this->path, "/"));
-        }
-        if (!empty($this->fragment)) {
-            $fragment = sprintf("#%s", $this->fragment);
-        }
-        return sprintf("%s%s%s%s%s", $scheme, $this->Authority(), $path, $query, $fragment);
-    }
-
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->Target();
+        return sprintf("%s%s%s%s%s",
+            sprintf("%s://", $this->scheme->string()),
+            $this->authority(),
+            sprintf("/%s", ltrim($this->path, "/")),
+            $this->query->queryString() ? sprintf("?%s", $this->query->queryString()) : "",
+            $this->fragment ? sprintf("#%s", $this->fragment) : ""
+        );
     }
 }

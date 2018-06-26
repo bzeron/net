@@ -4,10 +4,7 @@ namespace net\http;
 
 use net\collection\Collection;
 
-/**
- * Class ServerRequest
- * @package net\http
- */
+
 class ServerRequest extends Request
 {
     /**
@@ -24,11 +21,6 @@ class ServerRequest extends Request
      * @var Collection
      */
     protected $form;
-
-    /**
-     * @var bool
-     */
-    protected $parseBody = false;
 
     /**
      * @var UploadedFiles
@@ -54,18 +46,7 @@ class ServerRequest extends Request
      * @param UploadedFiles $uploadedFiles
      * @param Collection $attributes
      */
-    public function __construct(
-        Protocol $protocol,
-        Header $header,
-        Body $body,
-        Uri $uri,
-        $method,
-        Server $server,
-        Cookie $cookie,
-        Collection $form,
-        UploadedFiles $uploadedFiles,
-        Collection $attributes
-    )
+    public function __construct(Protocol $protocol, Header $header, Body $body, Uri $uri, string $method, Server $server, Cookie $cookie, Collection $form, UploadedFiles $uploadedFiles, Collection $attributes)
     {
         $this->server = $server;
         $this->cookie = $cookie;
@@ -78,7 +59,7 @@ class ServerRequest extends Request
     /**
      * @return Server
      */
-    public function Server()
+    public function server(): Server
     {
         return $this->server;
     }
@@ -86,7 +67,7 @@ class ServerRequest extends Request
     /**
      * @return Cookie
      */
-    public function Cookie()
+    public function cookie(): Cookie
     {
         return $this->cookie;
     }
@@ -94,18 +75,15 @@ class ServerRequest extends Request
     /**
      * @return Collection
      */
-    public function Form()
+    public function form(): Collection
     {
-        if (!$this->parseBody) {
-            $this->parseBody();
-        }
         return $this->form;
     }
 
     /**
      * @return UploadedFiles
      */
-    public function UploadedFiles()
+    public function uploadedFiles(): UploadedFiles
     {
         return $this->uploadedFiles;
     }
@@ -113,50 +91,8 @@ class ServerRequest extends Request
     /**
      * @return Collection
      */
-    public function Attributes()
+    public function attributes(): Collection
     {
         return $this->attributes;
-    }
-
-    /**
-     * parseBody when body is json or xml
-     * and merge in Form
-     */
-    private function parseBody()
-    {
-        $input = $this->body->Content();
-        switch (strtolower($this->header->HeaderLine("CONTENT-TYPE"))) {
-            case 'application/json':
-                $result = json_decode($input, true);
-                if (is_array($result)) {
-                    foreach ($result as $key => $value) {
-                        $this->form->set($key, $value);
-                    }
-                }
-                break;
-            case 'application/xml':
-                $backup = libxml_disable_entity_loader(true);
-                $backup_errors = libxml_use_internal_errors(true);
-                $result = (array)simplexml_load_string($input);
-                libxml_disable_entity_loader($backup);
-                libxml_clear_errors();
-                libxml_use_internal_errors($backup_errors);
-                foreach ($result as $key => $value) {
-                    $this->form->set($key, $value);
-                }
-                break;
-            case 'text/xml':
-                $backup = libxml_disable_entity_loader(true);
-                $backup_errors = libxml_use_internal_errors(true);
-                $result = (array)simplexml_load_string($input);
-                libxml_disable_entity_loader($backup);
-                libxml_clear_errors();
-                libxml_use_internal_errors($backup_errors);
-                foreach ($result as $key => $value) {
-                    $this->form->set($key, $value);
-                }
-                break;
-        }
-        $this->parseBody = true;
     }
 }

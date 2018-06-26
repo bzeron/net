@@ -2,17 +2,13 @@
 
 namespace net\http;
 
-/**
- * Class Scheme
- * @package net\http
- */
 class Scheme
 {
     /**
      * @var array
      */
     protected $schemes = [
-        'https', 'http', "cli"
+        'https', 'http'
     ];
 
     /**
@@ -24,29 +20,19 @@ class Scheme
      * Scheme constructor.
      * @param string $scheme
      */
-    public function __construct($scheme = "http")
+    public function __construct(string $scheme)
     {
-        if (in_array($scheme, $this->schemes, true)) {
-            $this->currentScheme = $scheme;
-        } else {
-            throw new \InvalidArgumentException("无效的策略");
+        if (!in_array($scheme, $this->schemes, true)) {
+            throw new \InvalidArgumentException("invalid scheme");
         }
+        $this->currentScheme = $scheme;
     }
 
     /**
      * @return string
      */
-    public function String()
+    public function string(): string
     {
         return $this->currentScheme;
     }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return sprintf("%s", $this->currentScheme);
-    }
-
 }

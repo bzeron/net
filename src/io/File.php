@@ -2,10 +2,8 @@
 
 namespace net\io;
 
-/**
- * Class File
- * @package net\io
- */
+use net\collection\Collection;
+
 class File implements CloseInterface, ReadInterface, WriteInterface, SeekInterface
 {
     /**
@@ -31,27 +29,12 @@ class File implements CloseInterface, ReadInterface, WriteInterface, SeekInterfa
     /**
      * @var bool
      */
-    protected $isClosed = false;
+    protected $close = false;
 
     /**
-     * @var array
+     * @var Collection
      */
-    protected $info = [];
-
-
-    /**
-     * @var array
-     */
-    private $canReadWrite = [
-        "read"  => [
-            "r", "w+", "r+", "x+", "c+", "rb", "w+b", "r+b", "x+b",
-            "c+b", "rt", "w+t", "r+t", "x+t", "c+t", "a+"
-        ],
-        "write" => [
-            "w", "w+", "rw", "r+", "x+", "c+", "wb", "w+b", "r+b",
-            "x+b", "c+b", "w+t", "r+t", "x+t", "c+t", "a", "a+"
-        ]
-    ];
+    protected $metas;
 
     /**
      * File constructor.
@@ -60,209 +43,239 @@ class File implements CloseInterface, ReadInterface, WriteInterface, SeekInterfa
     public function __construct($resource)
     {
         if (!is_resource($resource)) {
-            throw new \InvalidArgumentException("无效的资源句柄。");
+            throw new \InvalidArgumentException("invalid resource");
         }
         $this->resource = $resource;
-        $this->info = stream_get_meta_data($this->resource);
-        $this->seekable = $this->info["seekable"];
-        $this->readable = in_array($this->info["mode"], $this->canReadWrite["read"]);
-        $this->writable = in_array($this->info["mode"], $this->canReadWrite["write"]);
+
+        $this->metas = new Collection(stream_get_meta_data($this->resource));
+
+        $this->seekable = $this->metas->get("seekable");
+        $this->readable = in_array(
+            $this->metas->get("mode"),
+            ["r", "w+", "r+", "x+", "c+", "rb", "w+b", "r+b", "x+b", "c+b", "rt", "w+t", "r+t", "x+t", "c+t", "a+"]
+        );
+        $this->writable = in_array(
+            $this->metas->get("mode"),
+            ["w", "w+", "rw", "r+", "x+", "c+", "wb", "w+b", "r+b", "x+b", "c+b", "w+t", "r+t", "x+t", "c+t", "a", "a+"]
+        );
     }
 
     /**
-     *
+     * @return void
      */
     public function __destruct()
     {
-        $this->Close();
+        if (!$this->close) {
+            $this->close();
+        }
     }
 
     /**
-     *
+     * @return bool
      */
-    public function Close()
+    public function close(): bool
     {
-        fclose($this->resource);
-        $this->Detach();
-        $this->isClosed = true;
+        $close = $this->resource ? fclose($this->resource) : true;
+
+        $this->metas = [];
+        $this->resource = null;
+        $this->seekable = $this->readable = $this->writable = false;
+        $this->close = true;
+        return $close;
+    }
+
+    /**
+     * @return void
+     */
+    private function checkClose(): void
+    {
+        if ($this->close) {
+            throw new \RuntimeException("resource close");
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function checkRead(): void
+    {
+        if (!$this->readable) {
+            throw new \RuntimeException("resource can't read");
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function checkWrite(): void
+    {
+        if (!$this->writable) {
+            throw new \RuntimeException("resource can't write");
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function checkSeek(): void
+    {
+        if (!$this->seekable) {
+            throw new \RuntimeException("resource can't seek");
+        }
     }
 
     /**
      * @param int $length
      * @return string
      */
-    public function Read($length)
+    public function read(int $length): string
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException("资源句柄已经关闭。");
-        }
-        if (!$this->readable) {
-            throw new \RuntimeException(sprintf("资源句柄不可读。"));
-        }
+        $this->checkClose();
+        $this->checkRead();
         $result = fread($this->resource, $length);
         if ($result === false) {
-            throw new \RuntimeException(sprintf("读取资源句柄失败。"));
-        } else {
-            return $result;
+            throw new \RuntimeException("resource read fail");
         }
+        return $result;
     }
 
     /**
      * @param string $string
      * @return int
      */
-    public function Write($string)
+    public function write(string $string): int
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
-        if (!$this->writable) {
-            throw new \RuntimeException(sprintf("资源句柄不可写。"));
-        }
+        $this->checkClose();
+        $this->checkWrite();
         $result = fwrite($this->resource, $string);
         if ($result === false) {
-            throw new \RuntimeException(sprintf("写入资源句柄失败。"));
-        } else {
-            return $result;
+            throw new \RuntimeException("resource write fail");
         }
+        return $result;
     }
 
     /**
      * @param int $offset
      * @param int $whence
+     * @return void
      */
-    public function Seek($offset, $whence = SEEK_SET)
+    public function seek(int $offset, ?int $whence = SEEK_SET): void
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
-        if (!$this->seekable) {
-            throw new \RuntimeException(sprintf("资源句柄不可定位。"));
-        }
+        $this->checkClose();
+        $this->checkSeek();
         $result = fseek($this->resource, $offset, $whence);
         if ($result === -1) {
-            throw new \RuntimeException(sprintf("定位资源句柄失败。"));
+            throw new \RuntimeException("resource seek fail");
         }
     }
 
     /**
      * @return int
      */
-    public function Tell()
+    public function tell(): int
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
+        $this->checkClose();
         $result = ftell($this->resource);
         if ($result === false) {
-            throw new \RuntimeException(sprintf("获取资源句柄定位失败。"));
-        } else {
-            return $result;
+            throw new \RuntimeException("resource seek fail");
         }
+        return $result;
     }
 
     /**
-     *
+     * @return void
      */
-    public function Rewind()
+    public function rewind(): void
     {
-        $this->Seek(0);
+        $this->seek(0);
     }
-
 
     /**
      * @return bool
      */
-    public function Eof()
+    public function eof(): bool
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
+        $this->checkClose();
         return feof($this->resource);
     }
 
     /**
      * @return int
      */
-    public function Size()
+    public function size(): int
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
-        if (isset($this->meta["uri"])) {
-            clearstatcache(true, $this->info["uri"]);
+        $this->checkClose();
+        if ($this->metas->exists("uri")) {
+            clearstatcache(true, $this->metas->get("uri"));
         }
         $result = fstat($this->resource);
         if (isset($result["size"])) {
             return $result["size"];
-        } else {
-            throw new \RuntimeException(sprintf("获取资源句柄大小失败。"));
         }
+        throw new \RuntimeException("unknown resource size");
     }
 
     /**
-     * @param string|null $key
-     * @return mixed
+     * @param string $key
+     * @return null|string
      */
-    public function Info($key = null)
+    public function meta(string $key): ?string
     {
-        if (is_null($key)) {
-            return $this->info;
-        } else {
-            return isset($this->info[$key]) ? $this->info[$key] : null;
-        }
+        return $this->metas->get($key);
     }
 
+    /**
+     * @return Collection
+     */
+    public function metas(): Collection
+    {
+        return $this->metas;
+    }
 
     /**
      * @return string
      */
-    public function Content()
+    public function content(): string
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄已经关闭。"));
-        }
-        if (!$this->readable) {
-            throw new \RuntimeException(sprintf("资源句柄不可读。"));
-        }
-        $this->Rewind();
+        $this->checkClose();
+        $this->checkRead();
+        $this->rewind();
         $result = stream_get_contents($this->resource);
         if ($result === false) {
-            throw new \RuntimeException(sprintf("读取资源句柄失败。"));
-        } else {
-            return $result;
+            throw new \RuntimeException("resource read fail");
         }
+        return $result;
     }
 
     /**
-     * @return resource
+     * @return File
      */
-    public function Detach()
+    public function detach(): File
     {
-        if ($this->isClosed) {
-            throw new \RuntimeException(sprintf("资源句柄不可读。"));
-        }
-        $detach = $this->resource;
-        $this->info = [];
+        $this->checkClose();
+        $this->metas = [];
         $this->resource = null;
-        $this->isClosed = $this->seekable = $this->readable = $this->writable = $this->moved = false;
-        return $detach;
+        $this->seekable = $this->readable = $this->writable = false;
+        $this->close = true;
+        return new static($this->resource);
     }
 
     /**
-     * @param string $targetPath
+     * @param string $src
+     * @return File
      */
-    public function CopyTo($targetPath)
+    public function copy(string $src): File
     {
-        if (file_exists($targetPath)) {
-            throw new \InvalidArgumentException(sprintf("[ %s ] 已经存在", $targetPath));
+        if (file_exists($src)) {
+            throw new \InvalidArgumentException(sprintf("%s exist", $src));
         }
-        if (!is_writable(dirname($targetPath))) {
-            throw new \InvalidArgumentException(sprintf("[ %s ] 不可写", $targetPath));
+        if (!is_writable(dirname($src))) {
+            throw new \InvalidArgumentException(sprintf("%s can't write", $src));
         }
-        if (!copy($this->Info("uri"), $targetPath)) {
-            throw new \RuntimeException(sprintf('拷贝文件失败'));
+        if (!copy($this->meta("uri"), $src)) {
+            throw new \RuntimeException("copy file fail");
         }
+        return new static(fopen($src, 'w+'));
     }
 
     /**
@@ -272,6 +285,4 @@ class File implements CloseInterface, ReadInterface, WriteInterface, SeekInterfa
     {
         return $this->Content();
     }
-
-
 }

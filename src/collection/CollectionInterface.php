@@ -2,44 +2,48 @@
 
 namespace net\collection;
 
-/**
- * Interface CollectionInterface
- * @package net\collection
- */
 interface CollectionInterface extends \ArrayAccess, \IteratorAggregate, \Countable
 {
     /**
      * @return array
      */
-    public function all();
-
-    /**
-     * @param string $key
-     * @param mixed|null $default
-     * @return mixed
-     */
-    public function get($key, $default = null);
-
-    /**
-     * @param string $key
-     * @param string|array $value
-     */
-    public function set($key, $value);
+    public function all(): array;
 
     /**
      * @param string $key
      * @return bool
      */
-    public function has($key);
+    public function exists($key): bool;
 
     /**
      * @param string $key
+     * @param null $default
+     * @return mixed
      */
-    public function del($key);
+    public function get(string $key, $default = null);
 
     /**
-     *
+     * @param string $key
+     * @param mixed $value
+     * @return mixed
      */
-    public function clear();
+    public function set(string $key, $value);
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function has(string $key): bool;
+
+    /**
+     * @param string $key
+     * @return void
+     */
+    public function del(string $key): void;
+
+    /**
+     * @return void
+     */
+    public function clear(): void;
 
 }

@@ -10,13 +10,9 @@
         <testsuite name="Test Suite">
             <directory>./tests</directory>
         </testsuite>
-        <testsuite name="http/net">
-            <directory>./tests/example</directory>
-        </testsuite>
     </testsuites>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_DEBUG" value="true"/>
-        <env name="DEBUG_OUTPUT" value="false"/>
     </php>
 </phpunit>

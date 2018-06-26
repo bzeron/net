@@ -4,27 +4,25 @@ namespace net\http;
 
 use net\collection\Collection;
 
-/**
- * Class Query
- * @package net\http
- */
 class Query extends Collection
 {
+
     /**
-     * @param $queryString
-     * @return static
+     * @param string $queryString
+     * @return Query
      */
-    public static function PaserQuery($queryString)
+    public static function parseQuery(string $queryString): Query
     {
         $query = [];
         parse_str($queryString, $query);
         return new static($query);
     }
 
+
     /**
      * @return string
      */
-    public function QueryString()
+    public function queryString(): string
     {
         return http_build_query($this->all());
     }
@@ -34,7 +32,6 @@ class Query extends Collection
      */
     public function __toString()
     {
-        return $this->QueryString();
+        return $this->queryString();
     }
-
 }

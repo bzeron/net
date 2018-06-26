@@ -2,51 +2,34 @@
 
 namespace net\http;
 
-/**
- * Class UserInfo
- * @package net\http
- */
 class UserInfo
 {
     /**
      * @var string
      */
-    protected $user;
+    protected $user = "";
 
     /**
      * @var string
      */
-    protected $password;
+    protected $password = "";
 
     /**
      * UserInfo constructor.
      * @param string $user
-     * @param string|null $password
+     * @param string $password
      */
-    public function __construct($user, $password = null)
+    public function __construct(string $user, string $password)
     {
         $this->user = $user;
-        $this->password = is_null($password) ? "" : $password;
+        $this->password = $password;
     }
 
     /**
      * @return string
      */
-    public function Info()
+    public function info(): string
     {
-        $password = "";
-        if (!empty($this->password)) {
-            $password = sprintf(":%s", $this->password);
-        }
-        return sprintf("%s%s", $this->user, $password);
+        return sprintf("%s%s", $this->user, $this->password ? sprintf(":%s", $this->password) : "");
     }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->Info();
-    }
-
 }

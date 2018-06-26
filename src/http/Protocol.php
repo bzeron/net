@@ -2,10 +2,6 @@
 
 namespace net\http;
 
-/**
- * Class Protocol
- * @package net\http
- */
 class Protocol
 {
 
@@ -13,7 +9,7 @@ class Protocol
      * @var array
      */
     protected $versions = [
-        "1.0", "1.1", "2.0", "cli",
+        "1.0", "1.1", "2.0"
     ];
 
     /**
@@ -25,19 +21,18 @@ class Protocol
      * Protocol constructor.
      * @param string $version
      */
-    public function __construct($version = "1.1")
+    public function __construct(string $version)
     {
-        if (in_array($version, $this->versions, true)) {
-            $this->currentVersion = $version;
-        } else {
-            throw new \InvalidArgumentException("无效的协议版本号");
+        if (!in_array($version, $this->versions, true)) {
+            throw new \InvalidArgumentException("invalid scheme version");
         }
+        $this->currentVersion = $version;
     }
 
     /**
      * @return string
      */
-    public function Version()
+    public function version(): string
     {
         return $this->currentVersion;
     }
@@ -47,6 +42,6 @@ class Protocol
      */
     public function __toString()
     {
-        return sprintf("%s", $this->currentVersion);
+        return $this->currentVersion;
     }
 }

@@ -4,77 +4,79 @@ namespace net\http;
 
 use net\collection\Collection;
 
-/**
- * Class Cookie
- * @package net\cookie
- */
 class Cookie extends Collection
 {
     /**
-     * @var array
+     * @var Collection
      */
-    protected $setCookie = [];
+    public $cookies;
 
     /**
-     * @param string $key
-     * @param mixed $value
-     * @param int $expires
-     * @param string $domain
-     * @param bool $hostonly
+     * Cookie constructor.
+     * @param array $data
+     */
+    public function __construct(array $data = [])
+    {
+        parent::__construct($data);
+
+        $this->cookies = new  Collection();
+    }
+
+
+    /**
+     * @param string $name
+     * @param string $value
+     * @param int $expire
      * @param string $path
+     * @param string $domain
      * @param bool $secure
-     * @param bool $httponly
+     * @param bool $httpOnly
      * @return $this
      */
-    public function SetCookie($key, $value, $expires = 0, $domain = "", $hostonly = false, $path = "/", $secure = false, $httponly = false)
+    public function setCookie(string $name, string $value, int $expire, string $path = "", string $domain = "", bool $secure = false, bool $httpOnly = false): Cookie
     {
-        if ($expires < 0) {
-            unset($this->setCookie[$key]);
-            $this->del($key);
-        } else {
-            $this->setCookie[$key] = [
-                "key"      => $key,
-                'value'    => $value,
-                'domain'   => $domain,
-                'hostonly' => $hostonly,
-                'path'     => $path,
-                'expires'  => $expires,
-                'secure'   => $secure,
-                'httponly' => $httponly,
-            ];
-            $this->set($key, $value);
-        }
+        $cookie = new \stdClass();
+        $cookie->name = $name;
+        $cookie->value = $value;
+        $cookie->expire = $expire;
+        $cookie->path = $path;
+        $cookie->domain = $domain;
+        $cookie->secure = $secure;
+        $cookie->httpOnly = $httpOnly;
+        $this->cookies->set($name, $cookie);
         return $this;
     }
 
     /**
+     * @see setcookie()
+     *
      * @param string $key
-     * @param mixed|array $default
-     * @return mixed|null
+     * @param mixed $value
      */
-    public function GetCookie($key, $default = [])
+    public function set(string $key, $value)
     {
-        return $this->get($key, $default);
+        $this->setCookie(...func_get_args());
     }
 
     /**
-     * @return array
+     * @see setcookie()
+     *
+     * @param string $key
+     * @param mixed $value
      */
-    public function ToHeader()
+    public function offsetSet($key, $value)
     {
-        $cookies = [];
-        foreach ($this->setCookie as $key => $item) {
-            $cookies[$key] = implode("", [
-                "key"      => urlencode($item['key']),
-                'value'    => sprintf("=%s", urlencode($item['value'])),
-                'domain'   => empty($item['domain']) ? "" : sprintf("; domain=%s", $item['domain']),
-                'hostonly' => $item['hostonly'] ? "; HostOnly" : "",
-                'path'     => sprintf("; path=%s", $item['path']),
-                'expires'  => empty($item['expires']) ? "" : sprintf("; expires=%s", gmdate('D, d-M-Y H:i:s e', time() + $item['expires'])),
-                'secure'   => $item['secure'] ? "; secure" : "",
-                'httponly' => $item['httponly'] ? "; HttpOnly" : "",
-            ]);
-        }
-        return $cookies;
+        $this->setCookie(...func_get_args());
+    }
+
+    /**
+     * @see setcookie()
+     *
+     * @param string $key
+     * @param mixed $value
+     */
+    public function __set($key, $value)
+    {
+        $this->setCookie(...func_get_args());
     }
 }

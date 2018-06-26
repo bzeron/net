@@ -1,14 +1,11 @@
 <?php
 
 namespace net\io;
-/**
- * Interface CloseInterface
- * @package net\io
- */
+
 interface CloseInterface
 {
     /**
-     *
+     * @return bool
      */
-    public function Close();
+    public function close(): bool;
 }

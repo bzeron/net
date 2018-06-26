@@ -2,10 +2,6 @@
 
 namespace net\collection;
 
-/**
- * Class Collection
- * @package net\collection
- */
 class Collection implements CollectionInterface
 {
 
@@ -38,12 +34,13 @@ class Collection implements CollectionInterface
      */
     public function offsetGet($key)
     {
-        return array_key_exists($key, $this->binds) ? $this->binds[$key] : null;
+        return $this->offsetExists($key) ? $this->binds[$key] : null;
     }
 
     /**
      * @param string $key
-     * @param $value
+     * @param mixed $value
+     * @return void
      */
     public function offsetSet($key, $value)
     {
@@ -52,6 +49,7 @@ class Collection implements CollectionInterface
 
     /**
      * @param string $key
+     * @return void
      */
     public function offsetUnset($key)
     {
@@ -60,11 +58,11 @@ class Collection implements CollectionInterface
 
     /**
      * @param string $key
-     * @return mixed|null
+     * @return mixed
      */
     public function __get($key)
     {
-        return array_key_exists($key, $this->binds) ? $this->binds[$key] : null;
+        return $this->offsetGet($key);
     }
 
     /**
@@ -73,57 +71,67 @@ class Collection implements CollectionInterface
      */
     public function __set($key, $value)
     {
-        $this->binds[$key] = $value;
+        $this->offsetSet($key, $value);
     }
 
     /**
      * @return array
      */
-    public function all()
+    public function all(): array
     {
         return $this->binds;
-    }
-
-    /**
-     * @param $key
-     * @param mixed|null $default
-     * @return mixed|null
-     */
-    public function get($key, $default = null)
-    {
-        return array_key_exists($key, $this->binds) ? $this->binds[$key] : $default;
-    }
-
-    /**
-     * @param string $key
-     * @param mixed $value
-     */
-    public function set($key, $value)
-    {
-        $this->binds[$key] = $value;
     }
 
     /**
      * @param string $key
      * @return bool
      */
-    public function has($key)
+    public function exists($key): bool
     {
         return array_key_exists($key, $this->binds);
     }
 
     /**
      * @param string $key
+     * @param null $default
+     * @return mixed|null
      */
-    public function del($key)
+    public function get(string $key, $default = null)
     {
-        unset($this->binds[$key]);
+        return $this->offsetGet($key) ?? $default;
     }
 
     /**
-     *
+     * @param string $key
+     * @param mixed $value
      */
-    public function clear()
+    public function set(string $key, $value)
+    {
+        $this->offsetSet($key, $value);
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function has(string $key): bool
+    {
+        return $this->offsetExists($key);
+    }
+
+    /**
+     * @param string $key
+     * @return void
+     */
+    public function del(string $key): void
+    {
+        $this->offsetUnset($key);
+    }
+
+    /**
+     * @return void
+     */
+    public function clear(): void
     {
         $this->binds = [];
     }

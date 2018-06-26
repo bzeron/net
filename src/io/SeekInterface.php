@@ -2,31 +2,27 @@
 
 namespace net\io;
 
-/**
- * Interface SeekInterface
- * @package net\io
- */
 interface SeekInterface
 {
     /**
      * @param int $offset
-     * @param int $whence
+     * @param int|null $whence
      */
-    public function Seek($offset, $whence = SEEK_SET);
+    public function seek(int $offset, ?int $whence = SEEK_SET): void;
 
     /**
      * @return int
      */
-    public function Tell();
+    public function tell(): int;
 
     /**
-     *
+     * @return void
      */
-    public function Rewind();
+    public function rewind(): void;
 
     /**
      * @return bool
      */
-    public function Eof();
+    public function eof(): bool;
 
 }

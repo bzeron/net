@@ -2,17 +2,8 @@
 
 namespace net\http;
 
-/**
- * Class Response
- * @package net\http
- */
 class Response extends Message
 {
-    /**
-     *
-     */
-    const EOL = "\r\n";
-
     /**
      * @var int
      */
@@ -27,6 +18,11 @@ class Response extends Message
      * @var Cookie
      */
     protected $cookie;
+
+    /**
+     * @var bool
+     */
+    private $coded = false;
 
     /**
      * @var array
@@ -106,16 +102,10 @@ class Response extends Message
      * @param Cookie $cookie
      * @param Body $body
      */
-    public function __construct(
-        $status = 200,
-        Protocol $protocol,
-        Header $header,
-        Cookie $cookie,
-        Body $body
-    )
+    public function __construct(int $status, Protocol $protocol, Header $header, Cookie $cookie, Body $body)
     {
         if (!is_integer($status) || $status < 100 || $status > 599) {
-            throw new \InvalidArgumentException('无效的Http状态码');
+            throw new \InvalidArgumentException('invalid http status code');
         }
         $this->status = $status;
         $this->cookie = $cookie;
@@ -125,69 +115,64 @@ class Response extends Message
     /**
      * @return int
      */
-    public function GetCode()
+    public function getCode(): int
     {
         return $this->status;
     }
 
     /**
      * @param int $code
+     * @return void
      */
-    public function SetCode($code)
+    public function setCode(int $code): void
     {
+        if ($this->coded) {
+            throw new \RuntimeException("http status code already exist");
+        }
         $this->status = $code;
+        $this->coded = true;
     }
 
     /**
      * @return Cookie
      */
-    public function Cookie()
+    public function cookie(): Cookie
     {
         return $this->cookie;
     }
 
     /**
-     *
+     * @return void
      */
-    public function Respond()
+    public function Send(): void
     {
-        ini_set('default_mimetype', '');
-        $length = $this->body->Size();
-        $this->header->set("Content-Length", ob_get_length() + $length);
+        $sendBufferSize = ob_get_length();
+        $bodySize = $this->body->Size();
+        // add content length
+        $this->header->setHeader("Content-Length", $sendBufferSize + $bodySize);
         if (!headers_sent()) {
-            header(sprintf(
-                'HTTP/%s %s %s',
-                $this->protocol->Version(),
-                $this->status,
-                isset($this->messages[$this->status]) ? $this->messages[$this->status] : ""
-            ));
-            foreach ($this->cookie->ToHeader() as $item) {
-                header(sprintf('Set-Cookie: %s', $item), false);
+            // http status code
+            header(sprintf('HTTP/%s %s %s', $this->protocol->version(), $this->status, $this->messages[$this->status]));
+            // set cookie
+            foreach ($this->cookie->cookies as $cookie) {
+                setcookie($cookie->name, $cookie->value, $cookie->expire, $cookie->path, $cookie->domain, $cookie->secure, $cookie->httpOnly);
             }
-            foreach ($this->header as $key => $values) {
-                foreach ($values as $value) {
-                    header(sprintf('%s: %s', ucwords(strtolower($key)), $value), false);
-                }
+            // set header
+            foreach ($this->header->headers as $key => $value) {
+                header(sprintf('%s: %s', ucwords($key), implode(', ', $value)), false);
             }
         }
-        $this->body->Rewind();
-        if (isset($length)) {
-            $toRead = $length;
-            while ($toRead > 0 && !$this->body->Eof()) {
-                $data = $this->body->Read(min($this->chunkSize, $toRead));
-                echo $data;
-                $toRead -= strlen($data);
-                if (connection_status() != CONNECTION_NORMAL) {
-                    break;
-                }
+        // write body
+        $this->body->rewind();
+        while (!$this->body->eof()) {
+            echo $this->body->read($this->chunkSize);
+            if (connection_status() != CONNECTION_NORMAL) {
+                break;
             }
-        } else {
-            while (!$this->body->Eof()) {
-                echo $this->body->Read($this->chunkSize);
-                if (connection_status() != CONNECTION_NORMAL) {
-                    break;
-                }
-            }
+        }
+        // finish request
+        if (\function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
         }
     }
 }

@@ -4,108 +4,96 @@ namespace net\http;
 
 use net\collection\Collection;
 
-/**
- * Class Header
- * @package net\header
- */
 class Header extends Collection
 {
+    /**
+     * @var Collection
+     */
+    public $headers;
+
     /**
      * Collection constructor.
      * @param array $data
      */
     public function __construct(array $data = [])
     {
-        parent::__construct(array_change_key_case($data, CASE_UPPER));
-    }
-
-
-    /**
-     * @param mixed $value
-     * @return array
-     */
-    private function trimHeader($value)
-    {
-        if (is_array($value)) {
-            return array_map(function ($item) {
-                return trim($item, " \t");
-            }, $value);
-        } else {
-            return [trim($value, " \t")];
-        }
+        parent::__construct(array_change_key_case($data, CASE_LOWER));
+        $this->headers = new  Collection();
     }
 
     /**
      * @param $key
-     * @param mixed|null $default
-     * @return mixed|null
+     * @param mixed $default
+     * @return mixed
      */
-    public function get($key, $default = [])
+    public function get(string $key, $default = null)
     {
-        return parent::get(strtoupper($key), $default);
+        return parent::get(strtolower($key), is_null($default) ? [] : $default);
     }
 
     /**
      * @param string $key
      * @return bool
      */
-    public function has($key)
+    public function has(string $key): bool
     {
-        return parent::has(strtoupper($key));
+        return parent::has(strtolower($key));
     }
 
+
+    /**
+     * @deprecated
+     * @param string $key
+     * @param string|array $value
+     */
+    public function set(string $key, $value)
+    {
+        $this->setHeader($key, $value);
+    }
 
     /**
      * @param string $key
      * @param string|array $value
      */
-    public function set($key, $value)
+    public function __set($key, $value)
     {
-        parent::set(strtoupper($key), $this->trimHeader($value));
+        $this->setHeader($key, $value);
     }
 
     /**
      * @param string $key
-     * @param mixed $value
+     * @param string|array $value
      */
-    public function add($key, $value)
+    public function offsetSet($key, $value)
     {
-        if ($this->has($key)) {
-            $oldHeader = $this->get($key);
-            if (is_array($oldHeader)) {
-                array_push($oldHeader, $value);
-                $this->set($key, $oldHeader);
-            } else {
-                $oldHeader = [$oldHeader];
-                array_push($oldHeader, $value);
-                $this->set($key, $oldHeader);
-            }
-        } else {
-            $this->set($key, $value);
-        }
+        $this->setHeader($key, $value);
+    }
+
+
+    /**
+     * @deprecated
+     * @param string $key
+     * @return void
+     */
+    public function del(string $key): void
+    {
+        $this->headers->del($key);
     }
 
     /**
      * @param string $key
+     * @param array|string $value
+     * @return Header
      */
-    public function del($key)
+    public function setHeader(string $key, $value): Header
     {
-        parent::del(strtoupper($key));
-    }
-
-
-    /**
-     * @param $key
-     * @return string
-     */
-    public function HeaderLine($key)
-    {
-        $headerLine = $this->get($key, []);
-        if (is_array($headerLine)) {
-            return implode(', ', $headerLine);
-        } else {
-            return $headerLine;
+        $key = strtolower($key);
+        $value = is_array($value) ? $value : [$value];
+        if ($this->headers->exists($key)) {
+            $header = $this->headers->get($key);
+            array_push($header, ...$value);
         }
+        $this->headers->set($key, $value);
+        return $this;
     }
-
 }

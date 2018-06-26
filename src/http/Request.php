@@ -2,10 +2,6 @@
 
 namespace net\http;
 
-/**
- * Class Request
- * @package net\http
- */
 class Request extends Message
 {
     /**
@@ -19,6 +15,20 @@ class Request extends Message
     protected $method;
 
     /**
+     * @var array
+     */
+    protected $methods = [
+        'HEAD'    => 'HEAD',
+        'GET'     => 'GET',
+        'POST'    => 'POST',
+        'PUT'     => 'PUT',
+        'DELETE'  => 'DELETE',
+        'CONNECT' => 'CONNECT',
+        'OPTIONS' => 'OPTIONS',
+        'TRACE'   => 'TRACE',
+    ];
+
+    /**
      * Request constructor.
      * @param Protocol $protocol
      * @param Header $header
@@ -26,15 +36,13 @@ class Request extends Message
      * @param Uri $uri
      * @param string $method
      */
-    public function __construct(
-        Protocol $protocol,
-        Header $header,
-        Body $body = null,
-        Uri $uri,
-        $method
-    )
+    public function __construct(Protocol $protocol, Header $header, Body $body, Uri $uri, string $method)
     {
         $this->uri = $uri;
+        $method = strtoupper($method);
+        if (!in_array($method, $this->methods, true)) {
+            throw new \InvalidArgumentException("invalid method");
+        }
         $this->method = $method;
         parent::__construct($protocol, $header, $body);
     }
@@ -42,7 +50,7 @@ class Request extends Message
     /**
      * @return Uri
      */
-    public function Uri()
+    public function uri(): Uri
     {
         return $this->uri;
     }
@@ -50,34 +58,8 @@ class Request extends Message
     /**
      * @return string
      */
-    public function Method()
+    public function method(): string
     {
         return $this->method;
-    }
-
-
-    /**
-     * @return string
-     */
-    public function Send()
-    {
-        $socket = fsockopen($this->uri->Host(), $this->uri->Port(), $errno, $errstr, 30);
-        if (!$socket) {
-            throw new \RuntimeException($errstr, $errno);
-        }
-        $request = sprintf("%s %s HTTP/%s\r\nHost: %s\r\nConnection: Close\r\n\r\n%s",
-            $this->method,
-            $this->uri->Path(),
-            $this->protocol->Version(),
-            $this->uri->Host(),
-            $this->uri->Query()->QueryString()
-        );
-        fwrite($socket, $request);
-        $buffer = "";
-        while (!feof($socket)) {
-            $buffer .= fgets($socket, 128);
-        }
-        fclose($socket);
-        return $buffer;
     }
 }

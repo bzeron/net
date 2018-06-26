@@ -4,25 +4,23 @@ namespace net\http;
 
 use net\collection\Collection;
 
-/**
- * Class UploadedFiles
- * @package net\http
- */
 class UploadedFiles extends Collection
 {
+
     /**
-     * @param string $targetDir
+     * @param string $src
      * @param bool $randomName
+     * @return void
      */
-    public function MoveToDir($targetDir, $randomName = false)
+    public function move(string $src, bool $randomName = false): void
     {
-        foreach ($this->all() as $file) {
-            foreach ($file as $item) {
-                if ($item instanceof UploadedFile) {
+        foreach ($this->all() as $files) {
+            foreach ($files as $file) {
+                if ($file instanceof UploadedFile) {
                     if ($randomName) {
-                        $item->Move($targetDir, md5(uniqid()));
+                        $file->move($src, md5(uniqid()));
                     } else {
-                        $item->Move($targetDir);
+                        $file->move($src, "");
                     }
                 }
             }

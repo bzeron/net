@@ -4,10 +4,6 @@ namespace net\http;
 
 use net\io\File;
 
-/**
- * Class UploadedFile
- * @package net\http
- */
 class UploadedFile extends File
 {
 
@@ -29,35 +25,35 @@ class UploadedFile extends File
     /**
      * @var bool
      */
-    protected $moved = false;
+    protected $move = false;
 
     /**
      * UploadedFile constructor.
-     * @param resource $temp
+     * @param $temp
      * @param string $name
      * @param string $type
      * @param int $size
      */
-    public function __construct($temp, $name, $type, $size)
+    public function __construct($temp, string $name, string $type, int $size)
     {
         if (!is_uploaded_file($temp)) {
-            throw new \RuntimeException(sprintf("无效的上传文件"));
+            throw new \InvalidArgumentException("invalid upload file");
         }
         $stream = fopen($temp, "r");
         if ($stream === false) {
-            throw new \RuntimeException("打开上传文件出错");
+            throw new \RuntimeException("upload file can't read");
         }
         parent::__construct($stream);
         $this->name = $name;
         $this->type = $type;
         $this->size = $size;
-        $this->moved = false;
+        $this->move = false;
     }
 
     /**
      * @return string
      */
-    public function Name()
+    public function name(): string
     {
         return $this->name;
     }
@@ -65,7 +61,7 @@ class UploadedFile extends File
     /**
      * @return string
      */
-    public function Type()
+    public function type(): string
     {
         return $this->type;
     }
@@ -73,39 +69,38 @@ class UploadedFile extends File
     /**
      * @return int
      */
-    public function Size()
+    public function size(): int
     {
         return $this->size;
     }
 
     /**
-     * @param string $targetDir
-     * @param string|null $fileName
+     * @param string $src
+     * @param string $fileName
+     * @return File
      */
-    public function Move($targetDir, $fileName = null)
+    public function move(string $src, string $fileName): File
     {
-        if ($this->moved) {
-            throw new \RuntimeException("文件已经被移走");
+        if ($this->move) {
+            throw new \RuntimeException("upload file moved");
         }
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir);
+        if (!is_dir($src)) {
+            mkdir($src);
         }
-        if (!is_writable(dirname($targetDir))) {
-            throw new \InvalidArgumentException(sprintf("%s 不可写", $targetDir));
+        if (!is_writable(dirname($src))) {
+            throw new \RuntimeException(sprintf("%s can't write", $src));
         }
-        $newFile = sprintf(
-            "%s/%s",
-            rtrim($targetDir, "/"),
-            empty($fileName) ? $this->name : sprintf("%s.%s", $fileName, pathinfo($this->name, PATHINFO_EXTENSION))
+        $new = sprintf("%s/%s", rtrim($src, "/"),
+            $fileName ? sprintf("%s.%s", $fileName, pathinfo($this->name, PATHINFO_EXTENSION)) : $this->name
         );
-        if (file_exists($newFile)) {
-            throw new \InvalidArgumentException(sprintf("%s已经存在", $newFile));
+        if (file_exists($new)) {
+            throw new \RuntimeException(sprintf("%s exist", $new));
         }
-        $oldFile = $this->Info("uri");
-        if (!move_uploaded_file($oldFile, $newFile)) {
-            throw new \RuntimeException(sprintf("移动文件失败"));
+        $old = $this->metas->get("uri");
+        if (!move_uploaded_file($old, $new)) {
+            throw new \RuntimeException(sprintf("upload file move fail"));
         }
-        $this->moved = true;
+        $this->move = true;
+        return new File(fopen($new, 'w+'));
     }
-
 }

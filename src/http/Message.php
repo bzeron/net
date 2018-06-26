@@ -2,10 +2,6 @@
 
 namespace net\http;
 
-/**
- * Class Message
- * @package net\http
- */
 class Message
 {
     /**
@@ -29,7 +25,7 @@ class Message
      * @param Header $header
      * @param Body $body
      */
-    public function __construct(Protocol $protocol, Header $header, Body $body = null)
+    public function __construct(Protocol $protocol, Header $header, Body $body)
     {
         $this->protocol = $protocol;
         $this->header = $header;
@@ -39,7 +35,7 @@ class Message
     /**
      * @return Protocol
      */
-    public function Protocol()
+    public function protocol(): Protocol
     {
         return $this->protocol;
     }
@@ -47,7 +43,7 @@ class Message
     /**
      * @return Header
      */
-    public function Header()
+    public function header(): Header
     {
         return $this->header;
     }
@@ -55,7 +51,7 @@ class Message
     /**
      * @return Body
      */
-    public function Body()
+    public function body(): Body
     {
         return $this->body;
     }
