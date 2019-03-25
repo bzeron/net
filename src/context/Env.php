@@ -152,8 +152,7 @@ class Env
      */
     private static function uri(): Uri
     {
-        return new Uri(self::scheme(), self::host(), self::port(), self::path(), self::query(), self::fragment(), self::userInfo()
-        );
+        return new Uri(self::scheme(), self::host(), self::port(), self::path(), self::query(), self::fragment(), self::userInfo());
     }
 
     /**

@@ -283,6 +283,6 @@ class File implements CloseInterface, ReadInterface, WriteInterface, SeekInterfa
      */
     public function __toString()
     {
-        return $this->Content();
+        return $this->content();
     }
 }
